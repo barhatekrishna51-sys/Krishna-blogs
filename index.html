@@ -336,6 +336,7 @@ body.body-admin .admin-messages-container { display: block; animation: fadeUp 0.
 .msg-body { font-size: 0.85rem; color: var(--text); white-space: pre-wrap; line-height: 1.6; background: rgba(0,0,0,0.15); padding: 10px; border-radius: 6px;}
 .msg-del-btn { position: absolute; top: 1.25rem; right: 1.25rem; background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239,68,68,0.2); padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; cursor: pointer; transition: all 0.2s; font-family: var(--font); font-weight: 500;}
 .msg-del-btn:hover { background: rgba(239, 68, 68, 0.2); }
+.msg-body, .msg-card a { word-break: break-word; }
 
 /* TOAST */
 .toast{
@@ -373,17 +374,43 @@ body.body-admin .admin-actions { display: flex; }
 .post-attachment { display: inline-flex; align-items: center; gap: 6px; font-size: 0.78rem; color: var(--accent); background: var(--accent-glow); padding: 6px 12px; border-radius: 8px; text-decoration: none; margin-bottom: 12px; border: 1px solid rgba(0,229,160,0.2); transition: all 0.2s;}
 .post-attachment:hover { background: rgba(0,229,160,0.25); }
 
-@media(max-width:780px){
-  .sidebar{display:none}
+/* MOBILE SIDEBAR ELEMENTS */
+.mobile-menu-btn { display: none; align-items: center; justify-content: center; cursor: pointer; margin-right: 12px; color: var(--text); padding: 4px; border-radius: 6px; }
+.mobile-menu-btn:hover { background: var(--bg3); color: var(--accent); }
+.sidebar-overlay { position: fixed; inset: var(--nav) 0 0 0; background: rgba(0,0,0,0.6); z-index: 150; backdrop-filter: blur(3px); opacity: 0; pointer-events: none; transition: opacity 0.3s; }
+.sidebar-overlay.show { opacity: 1; pointer-events: auto; }
+
+@media(max-width:850px){
+  .mobile-menu-btn { display: flex; }
+  .sidebar {
+    position: fixed; left: 0; top: var(--nav); transform: translateX(-100%);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); z-index: 160;
+    box-shadow: 4px 0 24px rgba(0,0,0,0.5); border-right: 1px solid var(--border);
+  }
+  .sidebar.open { transform: translateX(0); }
   .pg{grid-template-columns:1fr}
   .full{grid-column:1}
   .cl{grid-template-columns:1fr}
   .fr{grid-template-columns:1fr}
-  .nav-brand{margin-right:1rem}
-  .nav-tabs a{padding:6px 10px;font-size:0.8rem}
+  .main{padding:1.25rem 1rem}
+  .nav-brand{margin-right:0.5rem}
 }
-@media(max-width:450px){
-  .nav-tabs a span{display:none}
+@media(max-width:550px){
+  .topnav{padding:0 0.8rem;}
+  .nav-tabs a{padding:8px;}
+  .nav-tabs a span{display:none} /* Only show icons */
+  .nav-tabs a svg{width:18px; height:18px;}
+  .res-text{display:none} /* Hide Resume text */
+  .btn-resume{padding:8px;}
+  .btn-resume svg{width:16px; height:16px; margin:0;}
+  .card{padding:1.1rem}
+  .msg-head{flex-direction:column; align-items:flex-start; gap:4px; padding-right: 60px;} /* Prevent overlap with delete button */
+  .comp-foot{flex-direction:column; align-items:stretch; gap: 12px;}
+  .comp-foot > div { justify-content: space-between; }
+  .comp-foot .post-sub{flex: 1; text-align: center; justify-content: center;}
+  .ph h1{font-size:1.45rem;}
+  .ai-chat-input { flex-direction: column; }
+  .ai-chat-input button { width: 100%; padding: 10px; }
 }
 </style>
 </head>
@@ -391,6 +418,9 @@ body.body-admin .admin-actions { display: flex; }
 
 <!-- TOP NAV -->
 <nav class="topnav">
+  <div class="mobile-menu-btn" onclick="toggleSidebar()">
+    <svg viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+  </div>
   <div class="nav-brand" onclick="toggleAdmin()" title="" style="cursor:pointer;"><div class="dot"></div>KRB</div>
   <ul class="nav-tabs" id="navTabs">
     <!-- Removed 'active' from Profile, Added it to Blog -->
@@ -407,10 +437,12 @@ body.body-admin .admin-actions { display: flex; }
   <div class="nav-right">
     <a href="Krishna resume.pdf" target="_blank" class="btn-resume">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 15V3m0 12-4-4m4 4 4-4"/><path d="M2 17v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2"/></svg>
-      Resume
+      <span class="res-text">Resume</span>
     </a>
   </div>
 </nav>
+
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
 
 <div class="layout">
 
@@ -436,16 +468,16 @@ body.body-admin .admin-actions { display: flex; }
     </div>
     <div class="ci">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
-      Jalgaon, Maharashtra
+      Jalgaon, Maharashtra, India
     </div>
   </div>
 
   <div class="sb-sec">
     <div class="sb-label">Technical Skills</div>
-    <div class="sk-row"><div class="sk-top"><span class="sk-name">Python</span><span class="sk-pct">60%</span></div><div class="sk-bar"><div class="sk-fill" style="width:60%"></div></div></div>
+    <div class="sk-row"><div class="sk-top"><span class="sk-name">Python</span><span class="sk-pct">50%</span></div><div class="sk-bar"><div class="sk-fill" style="width:50%"></div></div></div>
     <div class="sk-row"><div class="sk-top"><span class="sk-name">Embedded Systems</span><span class="sk-pct">60%</span></div><div class="sk-bar"><div class="sk-fill" style="width:60%"></div></div></div>
-    <div class="sk-row"><div class="sk-top"><span class="sk-name">Java</span><span class="sk-pct">55%</span></div><div class="sk-bar"><div class="sk-fill" style="width:55%"></div></div></div>
-    <div class="sk-row"><div class="sk-top"><span class="sk-name">C / C++</span><span class="sk-pct">55%</span></div><div class="sk-bar"><div class="sk-fill" style="width:55%"></div></div></div>
+    <div class="sk-row"><div class="sk-top"><span class="sk-name">Java</span><span class="sk-pct">40%</span></div><div class="sk-bar"><div class="sk-fill" style="width:40%"></div></div></div>
+    <div class="sk-row"><div class="sk-top"><span class="sk-name">C / C++</span><span class="sk-pct">40%</span></div><div class="sk-bar"><div class="sk-fill" style="width:40%"></div></div></div>
     <div class="sk-row"><div class="sk-top"><span class="sk-name">Data Analysis</span><span class="sk-pct">55%</span></div><div class="sk-bar"><div class="sk-fill" style="width:55%"></div></div></div>
     <div class="sk-row"><div class="sk-top"><span class="sk-name">Excel</span><span class="sk-pct">75%</span></div><div class="sk-bar"><div class="sk-fill" style="width:75%"></div></div></div>
   </div>
@@ -655,10 +687,10 @@ body.body-admin .admin-actions { display: flex; }
       <div class="cf-card">
         <div class="card-t">Send a Message</div>
         <div class="fr">
-          <div class="fg"><label>Your Name</label><input type="text" placeholder="NAme" id="cName"></div>
-          <div class="fg"><label>Your Email</label><input type="email" placeholder="email" id="cEmail"></div>
+          <div class="fg"><label>Your Name</label><input type="text" placeholder="Name" id="cName"></div>
+          <div class="fg"><label>Your Email</label><input type="email" placeholder="Email" id="cEmail"></div>
         </div>
-        <div class="fg"><label>Phone Number</label><input type="tel" placeholder="+91 xxxxxxxxxx" id="cPhone"></div>
+        <div class="fg"><label>Phone Number</label><input type="tel" placeholder="+91xxxxxxxxxx" id="cPhone"></div>
         <div class="fg"><label>Subject</label><input type="text" placeholder="Project / Internship / General" id="cSub"></div>
         <div class="fg"><label>Message</label><textarea placeholder="Write your message here…" id="cMsg"></textarea></div>
         <button class="btn-send" onclick="sendMsg()">
@@ -676,7 +708,8 @@ body.body-admin .admin-actions { display: flex; }
 
     <!-- Made by text footer -->
     <div style="text-align: center; padding-top: 3rem; padding-bottom: 1rem; font-size: 0.75rem; color: var(--faint); font-family: var(--mono); letter-spacing: 0.05em;">
-      Made by Krishna Barhate
+            design and develop by krishna Barhate<br>
+         © 2026 Krishna Barhate. All rights reserved.
     </div>
   </div>
 
@@ -779,11 +812,28 @@ async function askAI() {
   }
 }
 
+function toggleSidebar() {
+  const sb = document.querySelector('.sidebar');
+  const ov = document.getElementById('sidebarOverlay');
+  sb.classList.toggle('open');
+  if (sb.classList.contains('open')) {
+    ov.classList.add('show');
+  } else {
+    ov.classList.remove('show');
+  }
+}
+
 function showPage(id,el){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.getElementById('page-'+id).classList.add('active');
   document.querySelectorAll('.nav-tabs a').forEach(a=>a.classList.remove('active'));
   el.classList.add('active');
+  
+  // Close sidebar on mobile when navigating tabs
+  if(window.innerWidth <= 850) {
+    document.querySelector('.sidebar').classList.remove('open');
+    document.getElementById('sidebarOverlay').classList.remove('show');
+  }
 }
 
 let isAdmin = false;
@@ -807,7 +857,7 @@ function toggleAdmin() {
   const pass = prompt("Enter the admin password:");
   
   // Default password is set to 'krishna'
-  if(pass === 'krishna') {
+  if(pass === 'krishna81913') {
     isAdmin = true;
     document.body.classList.add('body-admin');
     composer.classList.add('admin-active');
@@ -836,7 +886,7 @@ let posts=[
 ];
 
 let receivedMessages = [
-  {id: 1, name: "Sample Recruiter", email: "recruiter@example.com", phone: "+91 9370833811", subject: "Internship Opportunity", message: "successfuly tested", date: "14 Apr 2026"}
+  {id: 1, name: "test1", email: "recruiter@example.com", phone: "+91xxxxxxxx", subject: "Internship", message: "Hi Krishna.", date: "14 Apr 2026"}
 ];
 
 let activeFilter='All';
